@@ -2,6 +2,7 @@
  * @file        base64的编码和解码
  * @version     1.0.0
  * @author      龙泉 <yangtuan2009@126.com>
+ * @see         https://files.cnblogs.com/files/mofish/base64.js
  */
 (function (root, factory) {
 
@@ -21,200 +22,134 @@
 
 })(this, function () {
     
-    var baseDatas = {
-        encodeChars: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/',
-        decodechars: [- 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1, -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1]
-    };
-    
+    var _keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+ 
     var base64 = {
 
-        /**
-         * base64的编码
-         * @param  {string} str 需要编码的字符串
-         * @return {string}     编码后的字符串
-         */
-        encode: function(str) {
+        // base64的编码
+        encode: function (input) {
 
-            var c1,
-                c2,
-                c3,
-                str = base64.utf16To8(str),
-                len = str.length,
-                i = 0,
-                ut = '',
-                out = '',
-                tempChars = baseDatas.encodeChars;
-            
-            while (i < len) {
+            var output = "";
+            var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
+            var i = 0;
 
-                c1 = str.charCodeAt(i++) & 0xff;
-                
-                if (i == len) {
+            input = base64._utf8_encode(input);
 
-                    out += tempChars.charAt(c1 >> 2);
-                    out += tempChars.charAt((c1 & 0x3) << 4);
-                    out += '==';
-                    break;
+            while (i < input.length) {
+
+                chr1 = input.charCodeAt(i++);
+                chr2 = input.charCodeAt(i++);
+                chr3 = input.charCodeAt(i++);
+
+                enc1 = chr1 >> 2;
+                enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+                enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+                enc4 = chr3 & 63;
+
+                if (isNaN(chr2)) {
+                    enc3 = enc4 = 64;
+                } else if (isNaN(chr3)) {
+                    enc4 = 64;
                 }
-                
-                c2 = str.charCodeAt(i++);
-                
-                if (i == len) {
 
-                    out += tempChars.charAt(c1 >> 2);
-                    out += tempChars.charAt(((c1 & 0x3) << 4) | ((c2 & 0xf0) >> 4));
-                    out += tempChars.charAt((c2 & 0xf) << 2);
-                    out += '=';
-                    break;
-                }
-                
-                c3 = str.charCodeAt(i++);
-                out += tempChars.charAt(c1 >> 2);
-                out += tempChars.charAt(((c1 & 0x3) << 4) | ((c2 & 0xf0) >> 4));
-                out += tempChars.charAt(((c2 & 0xf) << 2) | ((c3 & 0xc0) >> 6));
-                out += tempChars.charAt(c3 & 0x3f);
+                output = output +
+                        _keyStr.charAt(enc1) + _keyStr.charAt(enc2) +
+                        _keyStr.charAt(enc3) + _keyStr.charAt(enc4);
             }
-            
-            return out;
+
+            return output;
         },
-        
 
-        /**
-         * base64的解码
-         * @param  {string} str 需要解码的字符串
-         * @return {string}     解码后的字符串
-         */
-        decode: function(str) {
+        // base64的解码
+        decode: function (input) {
 
-            var c1,
-                c2,
-                c3,
-                c4,             
-                len = str.length,
-                i = 0,
-                ut = '',
-                out = '',
-                tempChars = baseDatas.decodechars;
-            
-            while (i < len) {
+            var output = "";
+            var chr1, chr2, chr3;
+            var enc1, enc2, enc3, enc4;
+            var i = 0;
 
-                do {
-                    c1 = tempChars[str.charCodeAt(i++) & 0xff];
-                } while( i < len && c1 == - 1 );
-                
-                if (c1 == -1) {
-                    break;
+            input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
+
+            while (i < input.length) {
+
+                enc1 = _keyStr.indexOf(input.charAt(i++));
+                enc2 = _keyStr.indexOf(input.charAt(i++));
+                enc3 = _keyStr.indexOf(input.charAt(i++));
+                enc4 = _keyStr.indexOf(input.charAt(i++));
+
+                chr1 = (enc1 << 2) | (enc2 >> 4);
+                chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+                chr3 = ((enc3 & 3) << 6) | enc4;
+
+                output = output + String.fromCharCode(chr1);
+
+                if (enc3 != 64) {
+                    output = output + String.fromCharCode(chr2);
                 }
-                
-                do {
-                    c2 = tempChars[str.charCodeAt(i++) & 0xff];
-                } while( i < len && c2 == - 1 );
-                
-                if (c2 == -1) {
-                    break;
+
+                if (enc4 != 64) {
+                    output = output + String.fromCharCode(chr3);
                 }
-                
-                out += String.fromCharCode((c1 << 2) | ((c2 & 0x30) >> 4));
-                
-                do {
-                    c3 = str.charCodeAt(i++) & 0xff;
-                    if (c3 == 61) return out;
-                    c3 = tempChars[c3];
-                } while( i < len && c3 == - 1 );
-                
-                if (c3 == -1) {
-                    break;
-                }
-                
-                out += String.fromCharCode(((c2 & 0xf) << 4) | ((c3 & 0x3c) >> 2));
-                
-                do {
-                    c4 = str.charCodeAt(i++) & 0xff;
-                    if (c4 == 61) return out;
-                    c4 = tempChars[c4];
-                } while( i < len && c4 == - 1 );
-                
-                if (c4 == -1) {
-                    break;
-                }
-                
-                out += String.fromCharCode(((c3 & 0x03) << 6) | c4);
             }
-            
-            out = base64.utf8To16(out);
-            
-            return out;
+
+            output = base64._utf8_decode(output);
+
+            return output;
         },
-        
 
-        // utf16 to utf8
-        utf16To8: function(str)
-        {
-            var i,
-                c,
-                out = '',
-                len = str.length;
-            
-            for(i = 0; i < len; i++) {
+        // 内部方法：UTF-8 编码
+        _utf8_encode: function (string) {
 
-                c = str.charCodeAt(i);
-                
-                if((c >= 0x0001) && (c <= 0x007F)) {
-                    out += str.charAt(i);
+            string = string.replace(/\r\n/g,"\n");
 
-                } else if(c > 0x07FF) {
-                    out += String.fromCharCode(0xE0 | ((c >> 12) & 0x0F));
-                    out += String.fromCharCode(0x80 | ((c >>  6) & 0x3F));
-                    out += String.fromCharCode(0x80 | ((c >>  0) & 0x3F));
+            var utftext = "";
 
+            for (var n = 0; n < string.length; n++) {
+
+                var c = string.charCodeAt(n);
+
+                if (c < 128) {
+                    utftext += String.fromCharCode(c);
+                } else if((c > 127) && (c < 2048)) {
+                    utftext += String.fromCharCode((c >> 6) | 192);
+                    utftext += String.fromCharCode((c & 63) | 128);
                 } else {
-                    out += String.fromCharCode(0xC0 | ((c >>  6) & 0x1F));
-                    out += String.fromCharCode(0x80 | ((c >>  0) & 0x3F));
-                }
+                    utftext += String.fromCharCode((c >> 12) | 224);
+                    utftext += String.fromCharCode(((c >> 6) & 63) | 128);
+                    utftext += String.fromCharCode((c & 63) | 128);
+                }     
             }
-            
-            return out;
+
+            return utftext;
         },
+     
+        // 内部方法：UTF-8 解码
+        _utf8_decode: function (utftext) {
 
+            var string = "";
+            var i = 0;
+            var c = c1 = c2 = 0;
 
-        // utf8 to utf16
-        utf8To16: function(str)
-        {
-            var c,
-                char2,
-                char3,
-                out = '',
-                len = str.length,
-                i = 0;
-            
-            while(i < len) {
+            while ( i < utftext.length ) {
 
-                c = str.charCodeAt(i++);
+                c = utftext.charCodeAt(i);
 
-                switch(c >> 4) { 
-                    
-                  case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
-                    // 0xxxxxxx
-                    out += str.charAt(i-1);
-                    break;
-                
-                  case 12:
-                  case 13:
-                    // 110x xxxx   10xx xxxx
-                    char2 = str.charCodeAt(i++);
-                    out += String.fromCharCode(((c & 0x1F) << 6) | (char2 & 0x3F));
-                    break;
-                
-                  case 14:
-                    // 1110 xxxx  10xx xxxx  10xx xxxx
-                    char2 = str.charCodeAt(i++);
-                    char3 = str.charCodeAt(i++);
-                    out += String.fromCharCode(((c & 0x0F) << 12) | ((char2 & 0x3F) << 6) | ((char3 & 0x3F) << 0));
-                    break;
+                if (c < 128) {
+                    string += String.fromCharCode(c);
+                    i++;
+                } else if((c > 191) && (c < 224)) {
+                    c2 = utftext.charCodeAt(i+1);
+                    string += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
+                    i += 2;
+                } else {
+                    c2 = utftext.charCodeAt(i+1);
+                    c3 = utftext.charCodeAt(i+2);
+                    string += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
+                    i += 3;
                 }
             }
-        
-            return out;
+
+            return string;
         }
     };
 
